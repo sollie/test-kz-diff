@@ -8,6 +8,7 @@ jobs:
   run_and_post_diff:
     runs-on: ubuntu-latest
     env:
+      GH_TOKEN: ${{ github.token }}
       SUBDIRECTORIES: |
         dev
         prod
