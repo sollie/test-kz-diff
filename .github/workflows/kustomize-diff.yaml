@@ -24,8 +24,7 @@ jobs:
 
     - name: Build and save output (PR branch)
       run: |
-        IFS=',' read -ra FOLDERS <<< "${{ vars.SUBFOLDERS }}"
-        for i in "${FOLDERS[@]}"; do
+        for i in ${{ vars.SUBFOLDERS }}; do
           kustomize build $i > "pr_output_$i.txt"
         done
 
@@ -35,8 +34,7 @@ jobs:
 
     - name: Build and save output (destination branch)
       run: |
-        IFS=',' read -ra FOLDERS <<< "${{ vars.SUBFOLDERS }}"
-        for i in "${FOLDERS[@]}"; do
+        for i in ${{ vars.SUBFOLDERS }}; do
           kustomize build $i > "base_output_$i.txt"
         done
 
@@ -46,9 +44,8 @@ jobs:
 
     - name: Compare outputs and comment on PR
       run: |
-        IFS=',' read -ra FOLDERS <<< "${{ vars.SUBFOLDERS }}"
         comment=""
-        for i in "${FOLDERS[@]}"; do
+        for i in ${{ vars.SUBFOLDERS }}; do
           if diff -q "pr_output_$i.txt" "base_output_$i.txt"; then
             comment+="No changes in the output of 'kustomize build' for folder $i.\n"
           else
