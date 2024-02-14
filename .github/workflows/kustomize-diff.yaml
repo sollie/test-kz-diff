@@ -5,66 +5,53 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  run_and_post_diff:
+  build:
     runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
-      SUBDIRECTORIES: |
-        dev
-        prod
 
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
 
-      - name: Set up kustomize
-        run: |
-          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
-          sudo mv kustomize /usr/local/bin/
+    - name: Setup Kustomize
+      uses: imjasonh/setup-kustomize@v1
 
-      - name: Run command in source branch
-        run: |
-          for dir in $SUBDIRECTORIES; do
-            echo "Running command in $dir"
-            /usr/local/bin/kustomize build ${dir} > /tmp/source_${dir}.txt
-          done
+    - name: Build and save output (PR branch)
+      run: |
+        IFS=',' read -ra FOLDERS <<< "${{ vars.SUBFOLDERS }}"
+        for i in "${FOLDERS[@]}"; do
+          kustomize build $i > "pr_output_$i.txt"
+        done
 
-      - name: Checkout destination code
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.base.ref }}
+    - name: Checkout destination branch
+      run: |
+        git checkout ${{ github.base_ref }}
 
-      - name: Run command in destination branch
-        run: |
-          for dir in $SUBDIRECTORIES; do
-            echo "Running command in $dir"
-            /usr/local/bin/kustomize build ${dir} > /tmp/destination_${dir}.txt
-          done
+    - name: Build and save output (destination branch)
+      run: |
+        IFS=',' read -ra FOLDERS <<< "${{ vars.SUBFOLDERS }}"
+        for i in "${FOLDERS[@]}"; do
+          kustomize build $i > "base_output_$i.txt"
+        done
 
-      - name: Checkout PR branch again
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
+    - name: Switch back to PR branch
+      run: |
+        git checkout ${{ github.head_ref }}
 
-      - name: Generate diff and post as comment
-        run: |
-          for dir in $SUBDIRECTORIES; do
-            diff=$(diff -u /tmp/source_${dir}.txt /tmp/destination_${dir}.txt) || true
-            if [ -n "$diff" ]; then
-              echo "#### Diff for $dir:" >> /tmp/diff.md
-              echo "```diff" >> /tmp/diff.md
-              echo "$diff" >> /tmp/diff.md
-              echo "```\n" >> /tmp/diff.md
-            fi
-          done
-          gh pr review --comment --body-file /tmp/diff.md
-          rm diff.md
-
-      - name: Cleanup files
-        run: |
-          for dir in $SUBDIRECTORIES; do
-            rm /tmp/source_${dir}.txt
-            rm /tmp/destination_${dir}.txt
-          done
+    - name: Compare outputs and comment on PR
+      run: |
+        IFS=',' read -ra FOLDERS <<< "${{ vars.SUBFOLDERS }}"
+        comment=""
+        for i in "${FOLDERS[@]}"; do
+          if diff -q "pr_output_$i.txt" "base_output_$i.txt"; then
+            comment+="No changes in the output of 'kustomize build' for folder $i.\n"
+          else
+            diff_output=$(diff -u "pr_output_$i.txt" "base_output_$i.txt")
+            comment+="There are differences in the output of 'kustomize build' for folder $i between the source and destination branches:\n\`\`\`diff\n$diff_output\n\`\`\`\n"
+          fi
+        done
+        echo "$comment" > comment.txt
+        gh pr comment ${{ github.event.pull_request.number }} --body-file comment.txt
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
