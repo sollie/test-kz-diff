@@ -19,6 +19,9 @@ jobs:
         curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
         sudo mv kustomize /usr/local/bin
 
+    - name: ls
+      run: ls -al
+
     - name: Build and save output (PR branch)
       run: |
         IFS=',' read -ra FOLDERS <<< "${{ vars.SUBFOLDERS }}"
