@@ -58,15 +58,17 @@ jobs:
             comment+="There are differences in the output of 'kustomize build' for folder $i between the source and destination branches:\n\`\`\`diff\n$diff_output\n\`\`\`\n"
           fi
         done
-        echo "comment=$comment" >> $GITHUB_OUTPUT
+        echo $comment > comment.txt
 
     - name: Create PR comment
       uses: actions/github-script@v7
       with:
           script: |
+            const fs = require('fs');
+            const comment = fs.readFileSync('comment.txt', 'utf8');
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '${{ steps.compare_create_comment.outputs.comment }}'
+              body: comment
             })
