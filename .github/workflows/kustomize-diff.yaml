@@ -1,0 +1,63 @@
+name: Kustomize Diff
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  run_and_post_diff:
+    runs-on: ubuntu-latest
+    env:
+      SUBDIRECTORIES: |
+        dev
+        prod
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Set up kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
+          sudo mv kustomize /usr/local/bin/
+
+      - name: Run command in source branch
+        run: |
+          for dir in $SUBDIRECTORIES; do
+            echo "Running command in $dir"
+            /usr/local/bin/kustomize build ${dir} > source_${dir}.txt
+          done
+
+      - name: Checkout destination code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+
+      - name: Run command in destination branch
+        run: |
+          for dir in $SUBDIRECTORIES; do
+            echo "Running command in $dir"
+            /usr/local/bin/kustomize build ${dir} > destination_${dir}.txt
+          done
+
+      - name: Generate diff and post as comment
+        run: |
+          for dir in $SUBDIRECTORIES; do
+            diff=$(diff -u source_${dir}.txt destination_${dir}.txt) || true
+            if [ -n "$diff" ]; then
+              echo "#### Diff for $dir:" >> diff.md
+              echo "```diff" >> diff.md
+              echo "$diff" >> diff.md
+              echo "```\n" >> diff.md
+            fi
+          done
+          gh pr review --body-file diff.md
+          rm diff.md
+
+      - name: Cleanup files
+        run: |
+          for dir in $SUBDIRECTORIES; do
+            rm output_${dir}.txt
+          done

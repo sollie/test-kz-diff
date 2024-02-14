@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app1
+  labels:
+    name: app
+    component: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: app
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 50%
+      maxUnavailable: 0
+  template:
+    metadata:
+      name: app
+      labels:
+        component: app
+    spec:
+      serviceAccountName: app-api
+      containers:
+        - name: app
+          resources:
+            limits:
+              cpu: 250m
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          image: app:latest
+          env:
+            - name: SYSTEM_ID
+              value: "AWS"
+          imagePullPolicy: Always
+      terminationGracePeriodSeconds: 180
+
