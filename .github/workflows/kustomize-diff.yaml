@@ -28,7 +28,7 @@ jobs:
         run: |
           for dir in $SUBDIRECTORIES; do
             echo "Running command in $dir"
-            /usr/local/bin/kustomize build ${dir} > $GITHUB_WORKSPACE/source_${dir}.txt
+            /usr/local/bin/kustomize build ${dir} > /tmp/source_${dir}.txt
           done
 
       - name: Checkout destination code
@@ -40,26 +40,26 @@ jobs:
         run: |
           for dir in $SUBDIRECTORIES; do
             echo "Running command in $dir"
-            /usr/local/bin/kustomize build ${dir} > $GITHUB_WORKSPACE/destination_${dir}.txt
+            /usr/local/bin/kustomize build ${dir} > /tmp/destination_${dir}.txt
           done
 
       - name: Generate diff and post as comment
         run: |
           for dir in $SUBDIRECTORIES; do
-            diff=$(diff -u $GITHUB_WORKSPACE/source_${dir}.txt $GITHUB_WORKSPACE/destination_${dir}.txt) || true
+            diff=$(diff -u /tmp/source_${dir}.txt /tmp/destination_${dir}.txt) || true
             if [ -n "$diff" ]; then
-              echo "#### Diff for $dir:" >> $GITHUB_WORKSPACE/diff.md
-              echo "```diff" >> $GITHUB_WORKSPACE/diff.md
-              echo "$diff" >> $GITHUB_WORKSPACE/diff.md
-              echo "```\n" >> $GITHUB_WORKSPACE/diff.md
+              echo "#### Diff for $dir:" >> /tmp/diff.md
+              echo "```diff" >> /tmp/diff.md
+              echo "$diff" >> /tmp/diff.md
+              echo "```\n" >> /tmp/diff.md
             fi
           done
-          gh pr review --body-file $GITHUB_WORKSPACE/diff.md
+          gh pr review --body-file /tmp/diff.md
           rm diff.md
 
       - name: Cleanup files
         run: |
           for dir in $SUBDIRECTORIES; do
-            rm $GITHUB_WORKSPACE/source_${dir}.txt
-            rm $GITHUB_WORKSPACE/destination_${dir}.txt
+            rm /tmp/source_${dir}.txt
+            rm /tmp/destination_${dir}.txt
           done
