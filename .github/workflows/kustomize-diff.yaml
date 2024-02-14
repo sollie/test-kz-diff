@@ -58,7 +58,7 @@ jobs:
             comment+="There are differences in the output of 'kustomize build' for folder $i between the source and destination branches:\n\`\`\`diff\n$diff_output\n\`\`\`\n"
           fi
         done
-        echo "{comment}=$comment" >> $GITHUB_OUTPUT
+        echo "comment=$comment" >> $GITHUB_OUTPUT
 
     - name: Create PR comment
       uses: actions/github-script@v7
