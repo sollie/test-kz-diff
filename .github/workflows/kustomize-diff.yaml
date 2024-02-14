@@ -54,7 +54,7 @@ jobs:
               echo "```\n" >> /tmp/diff.md
             fi
           done
-          gh pr review --body-file /tmp/diff.md
+          gh pr review --comment --body-file /tmp/diff.md
           rm diff.md
 
       - name: Cleanup files
