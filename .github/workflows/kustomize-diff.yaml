@@ -54,6 +54,7 @@ jobs:
             comment+="There are differences in the output of 'kustomize build' for folder $i between the source and destination branches:\n\`\`\`diff\n$diff_output\n\`\`\`\n"
           fi
         done
+        echo "$comment"
         echo "$comment" > comment.txt
         gh pr comment ${{ github.event.pull_request.number }} --body-file comment.txt
       env:
