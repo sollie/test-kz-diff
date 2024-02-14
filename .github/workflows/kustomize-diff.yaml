@@ -59,7 +59,7 @@ jobs:
           else
             echo "Create output"
             diff_output=$(diff -u "pr_output_$i.txt" "base_output_$i.txt" || true)
-            comment+="There are differences in the output of 'kustomize build' for folder $i between the source and destination branches:\n\`\`\`diff\n$diff_output\n\`\`\`\n"
+            comment+="There are differences in the output of 'kustomize build' for folder $i between the source and destination branches:\n```diff\n$diff_output\n```\n"
           fi
         done
         echo $comment > comment.txt
