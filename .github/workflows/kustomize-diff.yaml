@@ -42,6 +42,11 @@ jobs:
             /usr/local/bin/kustomize build ${dir} > destination_${dir}.txt
           done
 
+      - name: Checkout PR branch again
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
       - name: Generate diff and post as comment
         run: |
           for dir in $SUBDIRECTORIES; do
