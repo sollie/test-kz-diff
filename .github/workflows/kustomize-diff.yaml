@@ -14,8 +14,10 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Setup Kustomize
-      uses: imjasonh/setup-kustomize@v1
+    - name: Set up kustomize
+      run: |
+        curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
+        sudo mv kustomize /usr/local/bin
 
     - name: Build and save output (PR branch)
       run: |
